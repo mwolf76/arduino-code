@@ -6,8 +6,8 @@
 /* -- custom typedefs ------------------------------------------------------- */
 
 typedef short timer_id_t;
-typedef unsigned long ticks_t;
-typedef int timer_handler_t(timer_id_t id, ticks_t now, void *ctx);
+typedef unsigned long uticks_t;
+typedef int timer_handler_t(timer_id_t id, uticks_t now, void *ctx);
 
 typedef struct utimer_TAG {
 
@@ -15,10 +15,10 @@ typedef struct utimer_TAG {
     timer_id_t id;
 
     /** delay (ms) */
-    ticks_t dly;
+    uticks_t dly;
 
     /** current time when timer was started */
-    ticks_t base;
+    uticks_t base;
 
     /** Scheduled time action */
     timer_handler_t *handler;
@@ -38,11 +38,11 @@ int microtimers_is_initialized();
 int microtimers_init();
 
 /** schedules a delayed action. returns timer id if succesful, -1 otherwise */
-timer_id_t microtimers_schedule(ticks_t dly, timer_handler_t handler,
+timer_id_t microtimers_schedule(uticks_t dly, timer_handler_t handler,
                            void *user_data);
 
 /** returns number of milliseconds before expiration */
-ticks_t microtimers_timeleft(timer_id_t id);
+uticks_t microtimers_timeleft(timer_id_t id);
 
 /** cancels an existing timer. Returns 0 if succesful, -1 otherwise */
 int microtimers_cancel(timer_id_t id);

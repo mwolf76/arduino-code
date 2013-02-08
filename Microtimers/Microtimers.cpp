@@ -40,8 +40,8 @@ int microtimers_init()
 }
 
 /* returns timer id, -1 on failure. */
-timer_id_t microtimers_schedule( ticks_t dly, timer_handler_t handler,
-                            void *user_data)
+timer_id_t microtimers_schedule(uticks_t dly, timer_handler_t handler,
+                                void *user_data)
 {
     utimer_t timer;
     ASSERT(microtimers_is_initialized());
@@ -60,7 +60,7 @@ timer_id_t microtimers_schedule( ticks_t dly, timer_handler_t handler,
 
 /* returns number of microseconds before expiration, 0 if already
    expired, UINT_MAX if not found */
-ticks_t microtimers_timeleft(timer_id_t id)
+uticks_t microtimers_timeleft(timer_id_t id)
 {
     utimer_t *head = microtimers_active_list;
     ASSERT(microtimers_is_initialized());
@@ -68,8 +68,8 @@ ticks_t microtimers_timeleft(timer_id_t id)
     while (NULL != head) {
 
         if (head->id == id) {
-            ticks_t deadline = head->base + head->dly;
-            ticks_t now = micros();
+            uticks_t deadline = head->base + head->dly;
+            uticks_t now = micros();
             return deadline > now
                 ? deadline - now
                 : 0;
@@ -108,7 +108,7 @@ void microtimers_check()
 
     ASSERT(microtimers_is_initialized());
 
-    ticks_t now = micros();
+    uticks_t now = micros();
 
     while (NULL != head) {
 
@@ -124,7 +124,7 @@ void microtimers_check()
         }
         else {
             /* reschedule */
-            head->base = micros();
+            head->base = now;
         }
 
         // if (0 == -- count) (microtimers allow for just one timeout
@@ -138,8 +138,8 @@ void microtimers_check()
 /* -- static functions ------------------------------------------------------ */
 static inline int microtimers_cmp( utimer_t *a, utimer_t *b )
 {
-    ticks_t ta = a->base + a->dly;
-    ticks_t tb = b->base + b->dly;
+    uticks_t ta = a->base + a->dly;
+    uticks_t tb = b->base + b->dly;
 
     return (ta <= tb) ? 1 : -1;
 }
