@@ -124,7 +124,7 @@ void timers_check()
         }
         else {
             /* reschedule */
-            head->base = millis();
+            head->base = now;
         }
 
         if (0 == -- count)
