@@ -10,8 +10,9 @@ static timer_t timers[MAX_TIMERS];
 static timer_t *timers_free_list;
 static timer_t *timers_active_list;
 
-static int timers_initialized = 0;
-static timer_id_t timers_next_id = 0;
+static int _initialized = 0;
+static int _max_simultaneous_timeouts;
+static timer_id_t _next_id = 0;
 
 /** -- static function prototypes ------------------------------------------- */
 static inline int timers_cmp( timer_t *a, timer_t *b );
@@ -20,9 +21,9 @@ static int timers_array_remove( timer_t *timer );
 
 /** -- public functions ----------------------------------------------------- */
 int timers_is_initialized()
-{ return timers_initialized; }
+{ return _initialized; }
 
-int timers_init()
+int timers_init(int max_simultaneous_timeouts)
 {
     int i = MAX_TIMERS - 1;
 
@@ -35,7 +36,9 @@ int timers_init()
         -- i;
     }
 
-    timers_initialized = 1;
+    _max_simultaneous_timeouts = max_simultaneous_timeouts;
+    _initialized = 1;
+
     return 0;
 }
 
@@ -47,7 +50,7 @@ timer_id_t timers_schedule( ticks_t dly, timer_handler_t handler,
     ASSERT(timers_is_initialized());
 
     /* populate data structure */
-    timer.id =  timers_next_id ++;
+    timer.id =  _next_id ++;
 
     timer.base = millis();
     timer.dly = dly;
@@ -103,7 +106,7 @@ int timers_cancel(timer_id_t id)
 
 void timers_check()
 {
-    int rc, count = MAX_SIMULTANEOUS_TIMEOUTS;
+    int rc, count = _max_simultaneous_timeouts;
     timer_t *next, *head = timers_active_list;
 
     ASSERT(timers_is_initialized());
