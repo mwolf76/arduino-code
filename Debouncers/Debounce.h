@@ -37,13 +37,13 @@ typedef struct debouncer_TAG {
     void *user_data;
 
     /** current number of high samples */
-    unsigned long ticks_high;
+    ticks_t ticks_high;
 
     /** number of high samples required for click */
-    unsigned long ticks_click;
+    ticks_t ticks_click;
 
     /** number of high samples required for hold */
-    unsigned long ticks_hold;
+    ticks_t ticks_hold;
 
     struct debouncer_TAG *next;
 } debouncer_t ;

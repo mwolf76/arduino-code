@@ -12,7 +12,7 @@ static int debouncers_initialized = 0;
 static deb_id_t debouncers_next_id = 0;
 
 /* -- static function prototypes -------------------------------------------- */
-static int debouncers_check (timer_id_t unused, unsigned long now, void *data);
+static int debouncers_check (timer_id_t unused, ticks_t now, void *data);
 
 static int debouncers_fsm (debouncer_t *debouncer, int input);
 static int debouncers_array_insert( debouncer_t *debouncer );
@@ -69,7 +69,7 @@ deb_id_t debouncers_enable( debounce_handler_t *handler,
 /* -- static functions ------------------------------------------------------ */
 
 /* (reserved) this is used as a callback with Timers library */
-static int debouncers_check (timer_id_t unused, unsigned long now, void *data)
+static int debouncers_check (timer_id_t unused, ticks_t now, void *data)
 {
     debouncer_t *head = debouncers_active_list;
     ASSERT (debouncers_is_initialized());
