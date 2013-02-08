@@ -57,10 +57,10 @@ int debouncers_init();
 int debouncers_is_initialized();
 
 /** arms a debouncer with user-provided data */
-deb_id_t debouncers_enable( debounce_handler_t handler,
-                            short input, void *user_data);
+deb_id_t debouncers_enable(debounce_handler_t handler,
+                           short input, void *user_data);
 
 /** stops a debouncer with given id */
-int debouncers_disable( deb_id_t id );
+int debouncers_disable(deb_id_t id);
 
 #endif

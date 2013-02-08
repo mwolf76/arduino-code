@@ -18,10 +18,9 @@ static int debouncers_fsm (debouncer_t *debouncer, int input);
 static int debouncers_array_insert( debouncer_t *debouncer );
 
 /* -- public functions ------------------------------------------------------ */
+
 int debouncers_is_initialized()
-{
-    return debouncers_initialized;
-}
+{ return debouncers_initialized; }
 
 int debouncers_init()
 {
@@ -39,7 +38,7 @@ int debouncers_init()
     }
 
     /* uses Timers as a subsystem. Paranoid check */
-    ASSERT( timers_is_initialized() );
+    ASSERT(timers_is_initialized());
     timers_schedule( DEBOUNCE_RESOLUTION, debouncers_check, NULL );
 
     debouncers_initialized = 1;
@@ -50,7 +49,7 @@ deb_id_t debouncers_enable( debounce_handler_t *handler,
                             short input, void *user_data)
 {
     debouncer_t debouncer;
-    ASSERT ( debouncers_is_initialized() );
+    ASSERT (debouncers_is_initialized());
 
     /* populate data structure */
     debouncer.id =  debouncers_next_id ++;
@@ -69,17 +68,17 @@ deb_id_t debouncers_enable( debounce_handler_t *handler,
 
 /* -- static functions ------------------------------------------------------ */
 
-/* used as callback with Timers. */
+/* (reserved) this is used as a callback with Timers library */
 static int debouncers_check (timer_id_t unused, unsigned long now, void *data)
 {
     debouncer_t *head = debouncers_active_list;
-    ASSERT ( debouncers_is_initialized() );
+    ASSERT (debouncers_is_initialized());
 
     while (NULL != head) {
-        char buf[200];
         const int button = (HIGH == digitalRead(head->input));
 
 #if ! USE_SLCD
+        char buf[200];
         snprintf( buf, 200, "ID = %d (in %d), state = %s, user_data = %p",
                   head->id, head->input, button ? "DOWN" : "UP",
                   head->user_data );
@@ -99,7 +98,7 @@ static int debouncers_check (timer_id_t unused, unsigned long now, void *data)
     return 1; /* infinite rescheduling */
 }
 
-/** arms a new debouncer handler, returns -1 on error, 0 otherwise.  */
+/* arms a new debouncer handler: returns -1 on error, 0 otherwise */
 static int debouncers_array_insert( debouncer_t *debouncer )
 {
     if (debouncers_free_list == NULL)
@@ -119,7 +118,7 @@ static int debouncers_array_insert( debouncer_t *debouncer )
     return 0;
 }
 
-/** returns 1 if an event is triggered */
+/* returns 1 if an event is triggered, 0 otherwise */
 static int debouncers_fsm (debouncer_t *debouncer, int input)
 {
     if (! input) {
