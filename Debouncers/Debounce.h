@@ -51,7 +51,9 @@ typedef struct debouncer_TAG {
 /* -- public interface ------------------------------------------------------ */
 
 /** initialize debounce library (call from setup) */
-int debouncers_init(ticks_t res, ticks_t click, ticks_t hold);
+int debouncers_init(ticks_t resolution  = DEBOUNCE_DEFAULT_RESOLUTION,
+                    ticks_t click_ticks = DEBOUNCE_DEFAULT_CLICK_TICKS,
+                    ticks_t hold_ticks  = DEBOUNCE_DEFAULT_HOLD_TICKS);
 
 /** returns true if lib is initialized, false otherwise. */
 int debouncers_is_initialized();

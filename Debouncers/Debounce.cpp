@@ -27,7 +27,7 @@ static int debouncers_array_insert( debouncer_t *debouncer );
 int debouncers_is_initialized()
 { return _initialized; }
 
-int debouncers_init(ticks_t res, ticks_t click, ticks_t hold)
+int debouncers_init(ticks_t resolution, ticks_t click_ticks, ticks_t hold_ticks)
 {
     int i = MAX_DEBOUNCERS - 1;
 
@@ -43,20 +43,14 @@ int debouncers_init(ticks_t res, ticks_t click, ticks_t hold)
     }
 
     /* setup static data */
-    _resolution = res;
-    if (!_resolution) {
-        _resolution = DEBOUNCE_DEFAULT_RESOLUTION;
-    }
+    _resolution = resolution;
+    ASSERT(0 < _resolution);
 
-    _clickticks = click;
-    if (!_clickticks) {
-        _clickticks = DEBOUNCE_DEFAULT_CLICK_TICKS;
-    }
+    _clickticks = click_ticks;
+    ASSERT(0 < click_ticks);
 
-    _holdticks = hold;
-    if (!_holdticks) {
-        _holdticks = DEBOUNCE_DEFAULT_HOLD_TICKS;
-    }
+    _holdticks = hold_ticks;
+    ASSERT(0 < _holdticks);
 
     timers_schedule( _resolution, debouncers_check, NULL );
 
