@@ -8,8 +8,13 @@ static debouncer_t debouncers[MAX_DEBOUNCERS];
 static debouncer_t *debouncers_free_list;
 static debouncer_t *debouncers_active_list;
 
-static int debouncers_initialized = 0;
-static deb_id_t debouncers_next_id = 0;
+static int _initialized = 0;
+static deb_id_t _next_id = 0;
+
+/* configurable parameters (see debouncers_init) */
+static ticks_t _resolution;
+static ticks_t _clickticks;
+static ticks_t _holdticks;
 
 /* -- static function prototypes -------------------------------------------- */
 static int debouncers_check (timer_id_t unused, ticks_t now, void *data);
@@ -20,9 +25,9 @@ static int debouncers_array_insert( debouncer_t *debouncer );
 /* -- public functions ------------------------------------------------------ */
 
 int debouncers_is_initialized()
-{ return debouncers_initialized; }
+{ return _initialized; }
 
-int debouncers_init()
+int debouncers_init(ticks_t res, ticks_t click, ticks_t hold)
 {
     int i = MAX_DEBOUNCERS - 1;
 
@@ -37,11 +42,26 @@ int debouncers_init()
         -- i;
     }
 
-    /* uses Timers as a subsystem. Paranoid check */
-    ASSERT(timers_is_initialized());
-    timers_schedule( DEBOUNCE_RESOLUTION, debouncers_check, NULL );
+    /* setup static data */
+    _resolution = res;
+    if (!_resolution) {
+        _resolution = DEBOUNCE_DEFAULT_RESOLUTION;
+    }
 
-    debouncers_initialized = 1;
+    _clickticks = click;
+    if (!_clickticks) {
+        _clickticks = DEBOUNCE_DEFAULT_CLICK_TICKS;
+    }
+
+    _holdticks = hold;
+    if (!_holdticks) {
+        _holdticks = DEBOUNCE_DEFAULT_HOLD_TICKS;
+    }
+
+    timers_schedule( _resolution, debouncers_check, NULL );
+
+    _initialized = 1;
+
     return 0;
 }
 
@@ -52,15 +72,15 @@ deb_id_t debouncers_enable( debounce_handler_t *handler,
     ASSERT (debouncers_is_initialized());
 
     /* populate data structure */
-    debouncer.id =  debouncers_next_id ++;
+    debouncer.id =  _next_id ++;
 
     debouncer.state = DEB_IDLE;
     debouncer.input = input;
     debouncer.handler = handler;
     debouncer.user_data = user_data;
 
-    debouncer.ticks_hold = DEBOUNCE_HOLD_TICKS; // TODO: param?
-    debouncer.ticks_click = DEBOUNCE_CLICK_TICKS; // TODO: param?
+    debouncer.ticks_click = _clickticks;
+    debouncer.ticks_hold = _holdticks;
 
     return !debouncers_array_insert( &debouncer )
         ? debouncer.id : -1;

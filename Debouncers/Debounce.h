@@ -2,10 +2,10 @@
 #define DEBOUNCE_H_DEFINED
 
 #define MAX_DEBOUNCERS (10)
-#define DEBOUNCE_RESOLUTION (10)
 
-#define DEBOUNCE_CLICK_TICKS (10)
-#define DEBOUNCE_HOLD_TICKS (100)
+#define DEBOUNCE_DEFAULT_RESOLUTION (10)
+#define DEBOUNCE_DEFAULT_CLICK_TICKS (10)
+#define DEBOUNCE_DEFAULT_HOLD_TICKS (100)
 
 typedef enum {
     DEB_IDLE,
@@ -51,7 +51,7 @@ typedef struct debouncer_TAG {
 /* -- public interface ------------------------------------------------------ */
 
 /** initialize debounce library (call from setup) */
-int debouncers_init();
+int debouncers_init(ticks_t res, ticks_t click, ticks_t hold);
 
 /** returns true if lib is initialized, false otherwise. */
 int debouncers_is_initialized();
