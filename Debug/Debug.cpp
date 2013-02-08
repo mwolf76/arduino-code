@@ -1,7 +1,7 @@
 #include <Debug.h>
 
 /* reserved */
-const int do_error = 13;
+static const int do_error = 13;
 
 int debug_init()
 {
