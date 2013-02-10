@@ -90,14 +90,6 @@ static int debouncers_check (timer_id_t unused, ticks_t now, void *data)
     while (NULL != head) {
         const int button = (HIGH == digitalRead(head->input));
 
-#if ! USE_SLCD
-        char buf[200];
-        snprintf( buf, 200, "ID = %d (in %d), state = %s, user_data = %p",
-                  head->id, head->input, button ? "DOWN" : "UP",
-                  head->user_data );
-        Serial.println(buf);
-#endif
-
         if (debouncers_fsm(head, button)) {
             debounce_handler_t *handler = head->handler;
 
