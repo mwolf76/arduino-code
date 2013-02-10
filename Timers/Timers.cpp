@@ -151,10 +151,9 @@ void timers_check()
 
     head = _tmrs_active_list;
     while (NULL != head) {
-
-        if (1 == head->is_future ||
-            (0 == head->is_future && now < head->base + head->dly))
-            /* -1 == head->is_future means the timer *has* expired */
+        ticks_t deadline = head->base + head->dly;
+        if ((1 == head->is_future) ||
+            (0 == head->is_future && (now < deadline)))
             break;
 
         next = head->next;
@@ -165,7 +164,7 @@ void timers_check()
         }
         else {
             /* reschedule */
-            timers_set(head, now, head->dly);
+            timers_set(head, deadline, head->dly);
         }
 
         if (0 == -- count)
