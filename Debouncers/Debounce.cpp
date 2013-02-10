@@ -4,57 +4,56 @@
 #include <Arduino.h>
 
 /* -- static data ----------------------------------------------------------- */
-static debouncer_t debouncers[MAX_DEBOUNCERS];
-static debouncer_t *debouncers_free_list;
-static debouncer_t *debouncers_active_list;
-
-static int _initialized = 0;
-static deb_id_t _next_id = 0;
 
 /* configurable parameters (see debouncers_init) */
-static ticks_t _resolution;
-static ticks_t _clickticks;
-static ticks_t _holdticks;
+static ticks_t _debs_resolution;
+static ticks_t _debs_click_ticks;
+static ticks_t _debs_hold_ticks;
+
+static debouncer_t _debs_array[MAX_DEBOUNCERS];
+static debouncer_t *_debs_free_list;
+static debouncer_t *_debs_active_list;
+
+static int _debs_initialized = 0;
+static deb_id_t _debs_next_id = 0;
 
 /* -- static function prototypes -------------------------------------------- */
 static int debouncers_check (timer_id_t unused, ticks_t now, void *data);
-
 static int debouncers_fsm (debouncer_t *debouncer, int input);
 static int debouncers_array_insert( debouncer_t *debouncer );
 
 /* -- public functions ------------------------------------------------------ */
-
 int debouncers_is_initialized()
-{ return _initialized; }
+{ return _debs_initialized; }
 
 int debouncers_init(ticks_t resolution, ticks_t click_ticks, ticks_t hold_ticks)
 {
     int i = MAX_DEBOUNCERS - 1;
 
-    debouncers_free_list = NULL;
-    debouncers_active_list = NULL;
+    _debs_free_list = NULL;
+    _debs_active_list = NULL;
 
     while (0 <= i) {
-        memset(debouncers + i, 0, sizeof(debouncer_t));
-        debouncers[i].next = debouncers_free_list;
-        debouncers_free_list = &debouncers[i];
+        memset(_debs_array + i, 0, sizeof(debouncer_t));
+        _debs_array[i].next = _debs_free_list;
+        _debs_free_list = &_debs_array[i];
 
         -- i;
     }
 
     /* setup static data */
-    _resolution = resolution;
-    ASSERT(0 < _resolution);
+    _debs_resolution = resolution;
+    ASSERT(0 < _debs_resolution);
 
-    _clickticks = click_ticks;
+    _debs_click_ticks = click_ticks;
     ASSERT(0 < click_ticks);
 
-    _holdticks = hold_ticks;
-    ASSERT(0 < _holdticks);
+    _debs_hold_ticks = hold_ticks;
+    ASSERT(0 < _debs_hold_ticks);
 
-    timers_schedule( _resolution, debouncers_check, NULL );
+    timers_schedule( _debs_resolution, debouncers_check, NULL );
 
-    _initialized = 1;
+    _debs_initialized = 1;
 
     return 0;
 }
@@ -66,15 +65,15 @@ deb_id_t debouncers_enable( debounce_handler_t *handler,
     ASSERT (debouncers_is_initialized());
 
     /* populate data structure */
-    debouncer.id =  _next_id ++;
+    debouncer.id =  _debs_next_id ++;
 
     debouncer.state = DEB_IDLE;
     debouncer.input = input;
     debouncer.handler = handler;
     debouncer.user_data = user_data;
 
-    debouncer.ticks_click = _clickticks;
-    debouncer.ticks_hold = _holdticks;
+    debouncer.ticks_click = _debs_click_ticks;
+    debouncer.ticks_hold = _debs_hold_ticks;
 
     return !debouncers_array_insert( &debouncer )
         ? debouncer.id : -1;
@@ -85,7 +84,7 @@ deb_id_t debouncers_enable( debounce_handler_t *handler,
 /* (reserved) this is used as a callback with Timers library */
 static int debouncers_check (timer_id_t unused, ticks_t now, void *data)
 {
-    debouncer_t *head = debouncers_active_list;
+    debouncer_t *head = _debs_active_list;
     ASSERT (debouncers_is_initialized());
 
     while (NULL != head) {
@@ -115,19 +114,19 @@ static int debouncers_check (timer_id_t unused, ticks_t now, void *data)
 /* arms a new debouncer handler: returns -1 on error, 0 otherwise */
 static int debouncers_array_insert( debouncer_t *debouncer )
 {
-    if (debouncers_free_list == NULL)
+    if (_debs_free_list == NULL)
         return -1;
 
     /* fetch head from free list */
-    debouncer_t *elem = debouncers_free_list;
-    debouncers_free_list = debouncers_free_list->next;
+    debouncer_t *elem = _debs_free_list;
+    _debs_free_list = _debs_free_list->next;
 
     /* copy debouncer data */
     memcpy( elem, debouncer, sizeof(debouncer_t));
 
     /* head insertion */
-    elem->next = debouncers_active_list;
-    debouncers_active_list = elem;
+    elem->next = _debs_active_list;
+    _debs_active_list = elem;
 
     return 0;
 }
