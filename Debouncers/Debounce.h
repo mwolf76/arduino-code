@@ -1,11 +1,15 @@
 #ifndef DEBOUNCE_H_DEFINED
 #define DEBOUNCE_H_DEFINED
 
-#define MAX_DEBOUNCERS (10)
+#include <Timers.h>
 
-#define DEBOUNCE_DEFAULT_RESOLUTION (10)
-#define DEBOUNCE_DEFAULT_CLICK_TICKS (10)
-#define DEBOUNCE_DEFAULT_HOLD_TICKS (100)
+const int MAX_DEBOUNCERS = 10;
+const int DEBOUNCE_DEFAULT_RESOLUTION = 10;
+const int DEBOUNCE_DEFAULT_CLICK_TICKS = 10;
+const int DEBOUNCE_DEFAULT_HOLD_TICKS  = 100;
+
+/* -- custom typedefs ------------------------------------------------------- */
+typedef short deb_id_t;
 
 typedef enum {
     DEB_IDLE,
@@ -13,9 +17,6 @@ typedef enum {
     DEB_CLICK,
     DEB_HOLD,
 } debouncer_state_t;
-
-/** debouncer handler function type */
-typedef short deb_id_t;
 
 typedef int debounce_handler_t(deb_id_t id, debouncer_state_t state, void *ctx);
 

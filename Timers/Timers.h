@@ -1,8 +1,8 @@
 #ifndef TIMERS_H_DEFINED
 #define TIMERS_H_DEFINED
 
-#define MAX_TIMERS (20)
-#define TIMERS_DEFAULT_MAX_SIMULTANEOUS_TIMEOUTS (5)
+const int MAX_TIMERS = 20;
+const int TIMERS_DEFAULT_MAX_SIMULTANEOUS_TIMEOUTS = 5;
 
 /* -- custom typedefs ------------------------------------------------------- */
 
