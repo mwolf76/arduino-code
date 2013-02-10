@@ -8,12 +8,12 @@
 #include <SerialLCD.h>
 #include <SoftwareSerial.h>
 
-#define N_SAMPLES 12
+#define N_SAMPLES (24)
 
-#define TEMP_SAMPLE_PERIOD 200
-#define LCD_UPDATE_PERIOD  800
-#define ACT_UPDATE_PERIOD 2000
-#define CLK_PERIOD 1000
+#define TEMP_SAMPLE_PERIOD (125)
+#define LCD_UPDATE_PERIOD  (500)
+#define ACT_UPDATE_PERIOD (1000)
+#define CLK_PERIOD        (1000)
 
 /* SLCD and Serial monitor can not be used at once, uncomment
    following line to enable SLCD sub-system. */
@@ -27,9 +27,6 @@
 
 #define PRINT_TIME(h,m)                                                 \
     do {                                                                \
-        char buf[10];                                                   \
-        snprintf(buf, 10, "%02d:%02d", (h), (m));                       \
-        slcd.print(buf);                                                \
     } while (0)
 
 #define GOTO_XY(x,y)                                                    \
@@ -44,8 +41,11 @@
 /* -- pin assignments ------------------------------------------------------- */
 const int ai_thermistor = 0;
 
-const int di_increment = 7;
-const int di_decrement = 8;
+// const int di_increment = 7;
+// const int di_decrement = 8;
+
+const int di_clk_switch = 7;
+const int di_clk_adjust = 8;
 
 const int do_actuate = 4;
 
@@ -112,7 +112,15 @@ static int thermal_callback(timer_id_t unused, unsigned long now, void *ctx);
 static int clock_callback(timer_id_t unused, unsigned long now, void *ctx);
 
 /* button callbacks */
-static int button_callback(deb_id_t unused, debouncer_state_t state, void *ctx);
+static int thermal_button_callback(deb_id_t unused, debouncer_state_t state,
+                                   void *ctx);
+
+static int clk_switch_callback(deb_id_t unused, debouncer_state_t state,
+                               void *ctx);
+
+static int clk_adjust_callback(deb_id_t unused, debouncer_state_t state,
+                               void *ctx);
+
 
 /* command function, with actuates to the outer world. */
 static int control(int status);
@@ -129,8 +137,10 @@ void setup()
 {
     int rc;
 
-    pinMode(di_increment, INPUT);
-    pinMode(di_decrement, INPUT);
+    // pinMode(di_increment, INPUT);
+    // pinMode(di_decrement, INPUT);
+    pinMode(di_clk_adjust, INPUT);
+    pinMode(di_clk_switch, INPUT);
     pinMode(do_actuate, OUTPUT);
 
     debug_init();
@@ -178,10 +188,18 @@ void setup()
     rc = debouncers_init();
     if (0 != rc) HALT();
 
-    rc = debouncers_enable( button_callback, di_increment, &increment_ctx);
+    // rc = debouncers_enable( thermal_button_callback, di_increment,
+    // &increment_ctx);
+    // if (0 > rc) HALT();
+
+    // rc = debouncers_enable( thermal_button_callback, di_decrement,
+    // &decrement_ctx);
+    // if (0 > rc) HALT();
+
+    rc = debouncers_enable( clk_switch_callback, di_clk_switch, &display_ctx);
     if (0 > rc) HALT();
 
-    rc = debouncers_enable( button_callback, di_decrement, &decrement_ctx);
+    rc = debouncers_enable( clk_adjust_callback, di_clk_adjust, &display_ctx);
     if (0 > rc) HALT();
 }
 
@@ -191,7 +209,8 @@ void loop()
 }
 
 /* -- static functions ------------------------------------------------------ */
-static int button_callback(deb_id_t unused, debouncer_state_t state, void *ctx)
+static int thermal_button_callback(deb_id_t unused, debouncer_state_t state,
+                                   void *ctx)
 {
     deb_ctx_t *pctx = (deb_ctx_t *) ctx;
     double tmp = *(pctx->pgoal_temperature) + pctx->increment;
@@ -213,6 +232,59 @@ static int button_callback(deb_id_t unused, debouncer_state_t state, void *ctx)
 
     return -1; /* rejected */
 }
+
+static int clk_switch_callback(deb_id_t unused, debouncer_state_t state,
+                               void *ctx)
+{
+    display_ctx_t *pctx = (display_ctx_t *) ctx;
+
+    switch (pctx->ctl) {
+    case CTL_RUNNING:
+        pctx->ctl = CTL_SET_HOUR;
+        break;
+
+    case CTL_SET_HOUR:
+        pctx->ctl = CTL_SET_MINUTE;
+        break;
+
+    case CTL_SET_MINUTE:
+        pctx->ctl = CTL_RUNNING;
+        break;
+
+    default: HALT();
+    }
+
+    return 0;
+}
+
+static int clk_adjust_callback(deb_id_t unused, debouncer_state_t state,
+                               void *ctx)
+{
+    display_ctx_t *pctx = (display_ctx_t *) ctx;
+
+    switch (pctx->ctl) {
+    case CTL_RUNNING:
+        /* nop */
+        break;
+
+    case CTL_SET_HOUR:
+        if (24 <= ++ pctx->now.tm_hour) {
+            pctx->now.tm_hour -= 24;
+        }
+        break;
+
+    case CTL_SET_MINUTE:
+        if (60 <= ++ pctx->now.tm_min) {
+            pctx->now.tm_min -= 60;
+        }
+        break;
+
+    default: HALT();
+    }
+
+    return 0;
+}
+
 
 static int display_callback(timer_id_t unused, unsigned long now, void *ctx)
 {
@@ -285,8 +357,8 @@ static int sampling_callback(timer_id_t unused, unsigned long now, void *ctx)
     display_ctx_t *pctx = (display_ctx_t *) ctx;
 
     /* read a sample into ring buffer */
-    pctx->samples[pctx->last_sample ++ ] = readTemp();
-    if (pctx->last_sample >= N_SAMPLES) {
+    pctx->samples[pctx->last_sample ++] = readTemp();
+    if (N_SAMPLES == pctx->last_sample) {
         pctx->initialized = 1;
         pctx->last_sample = 0;
     }
@@ -340,6 +412,35 @@ static void update_display(display_ctx_t *pctx)
     PRINT_TEMP(pctx->goal_temperature);
 
     GOTO_XY(11, 1);
+    {
+        char buf[10];
+
+        if (CTL_RUNNING == pctx->ctl) {
+            snprintf(buf, 10, "%02d:%02d", pctx->now.tm_hour, pctx->now.tm_min);
+        }
+        else if (CTL_SET_HOUR == pctx->ctl) {
+            if (pctx->heartbeat) {
+                snprintf(buf, 10, "%02d:%02d",
+                         pctx->now.tm_hour, pctx->now.tm_min);
+            }
+            else {
+                snprintf(buf, 10, "  :%02d", pctx->now.tm_min);
+            }
+        }
+        else if (CTL_SET_MINUTE == pctx->ctl) {
+            if (pctx->heartbeat) {
+                snprintf(buf, 10, "%02d:%02d",
+                         pctx->now.tm_hour, pctx->now.tm_min);
+            }
+            else {
+                snprintf(buf, 10, "%02d:  ", pctx->now.tm_hour);
+            }
+        }
+
+        slcd.print(buf);
+    }
+
+
     PRINT_TIME(pctx->now.tm_hour, pctx->now.tm_min);
 #endif
 }
