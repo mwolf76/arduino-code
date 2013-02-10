@@ -15,35 +15,25 @@ All the code is released under GPLv2.1
 LIBRARIES
 =========
 
-. Debug
+* Debug - Debugging utilities.
 
-Debugging utilities.
+* Debouncers - Provides a pushbutton debouncing event based API. A
+  registered callback function will be invoked by the library when the
+  corresponding button event is detected by the library. Uses Timers
+  (see below) as a dependency. Currently CLICK and HOLD events are
+  supported.
 
-. Debouncers
+* Microtimers - Same as Timers (see below) on a micro-second scale.
 
-Provides a pushbutton debouncing event based API. Basically, you
-register a callback that will be invoked by the library when the
-corresponding event is detected by the library. Uses Timers (see
-below) as a dependency.
-
-. Microtimers
-
-Same as Timers (see below) on a micro-second scale.
-
-. Timers
-
-Provides a time event based API. Basically, you register a callback
-that will be invoked by the library when the corresponding event is
-detected by the library. Resolution is 1/1000th of a second. (uses
-millis()).
-
+* Timers - Provides a Time event based API. A registered callback
+function will be invoked by the library when the corresponding time
+event is detected by the library. Time resolution is 1/1000th of a
+second (aka a millisecond).
 
 SKETCHES
 ========
 
-. Thermostat
-
-My first Arduino sketch. Implements a standard thermostat with
-hysteresis, user interaction is provided by a 2x16 LED display and a
-few bush buttons. An extra LED is used for diagnostic. A relay is used
-as the main actuator.
+* Thermostat - My first Arduino sketch. Implements a standard
+thermostat with hysteresis, user interaction is provided by a 2x16 LED
+display and a few bush buttons. An extra LED is used for diagnostic. A
+relay is used as the main actuator.
