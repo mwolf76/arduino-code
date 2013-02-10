@@ -5,14 +5,17 @@
 #include <string.h>
 #include <limits.h>
 
-/* static data */
-static timer_t timers[MAX_TIMERS];
-static timer_t *timers_free_list;
-static timer_t *timers_active_list;
+/* -- static data ----------------------------------------------------------- */
 
-static int _initialized = 0;
-static int _max_simultaneous_timeouts;
-static timer_id_t _next_id = 0;
+/* configurable parameters (see timers_init) */
+static int _tmrs_max_timeouts;
+
+static timer_t _tmrs_array[MAX_TIMERS];
+static timer_t *_tmrs_free_list;
+static timer_t *_tmrs_active_list;
+
+static int _tmrs_initialized = 0;
+static timer_id_t _tmrs_next_id = 0;
 
 /** -- static function prototypes ------------------------------------------- */
 static inline int timers_cmp( timer_t *a, timer_t *b );
@@ -21,23 +24,23 @@ static int timers_array_remove( timer_t *timer );
 
 /** -- public functions ----------------------------------------------------- */
 int timers_is_initialized()
-{ return _initialized; }
+{ return _tmrs_initialized; }
 
 int timers_init(int max_simultaneous_timeouts)
 {
     int i = MAX_TIMERS - 1;
 
-    timers_free_list = NULL;
-    timers_active_list = NULL;
+    _tmrs_free_list = NULL;
+    _tmrs_active_list = NULL;
 
     while (0 <= i) {
-        timers[i].next = timers_free_list;
-        timers_free_list = &timers[i];
+        _tmrs_array[i].next = _tmrs_free_list;
+        _tmrs_free_list = &_tmrs_array[i];
         -- i;
     }
 
-    _max_simultaneous_timeouts = max_simultaneous_timeouts;
-    _initialized = 1;
+    _tmrs_max_timeouts = max_simultaneous_timeouts;
+    _tmrs_initialized = 1;
 
     return 0;
 }
@@ -50,7 +53,7 @@ timer_id_t timers_schedule( ticks_t dly, timer_handler_t handler,
     ASSERT(timers_is_initialized());
 
     /* populate data structure */
-    timer.id =  _next_id ++;
+    timer.id =  _tmrs_next_id ++;
 
     timer.base = millis();
     timer.dly = dly;
@@ -65,7 +68,7 @@ timer_id_t timers_schedule( ticks_t dly, timer_handler_t handler,
    expired, UINT_MAX if not found */
 ticks_t timers_timeleft(timer_id_t id)
 {
-    timer_t *head = timers_active_list;
+    timer_t *head = _tmrs_active_list;
     ASSERT(timers_is_initialized());
 
     while (NULL != head) {
@@ -86,7 +89,7 @@ ticks_t timers_timeleft(timer_id_t id)
 
 int timers_cancel(timer_id_t id)
 {
-    timer_t *head = timers_active_list;
+    timer_t *head = _tmrs_active_list;
     ASSERT(timers_is_initialized());
 
     while (NULL != head) {
@@ -106,8 +109,8 @@ int timers_cancel(timer_id_t id)
 
 void timers_check()
 {
-    int rc, count = _max_simultaneous_timeouts;
-    timer_t *next, *head = timers_active_list;
+    int rc, count = _tmrs_max_timeouts;
+    timer_t *next, *head = _tmrs_active_list;
 
     ASSERT(timers_is_initialized());
 
@@ -149,12 +152,12 @@ static inline int timers_cmp( timer_t *a, timer_t *b )
 
 static int timers_array_insert( timer_t *timer )
 {
-    if (timers_free_list == NULL)
+    if (_tmrs_free_list == NULL)
         return -1;
 
     /* fetch head from free list */
-    timer_t *elem = timers_free_list;
-    timers_free_list = elem->next;
+    timer_t *elem = _tmrs_free_list;
+    _tmrs_free_list = elem->next;
 
     /* copy timer data  (avoid overlap) */
     if (elem != timer) {
@@ -162,14 +165,14 @@ static int timers_array_insert( timer_t *timer )
     }
 
     /* sorted insertion */
-    timer_t *previous = NULL, *eye = timers_active_list;
+    timer_t *previous = NULL, *eye = _tmrs_active_list;
     while (NULL != eye && 0 < timers_cmp( eye, elem)) {
         previous = eye;
         eye = eye->next;
     }
 
     if (NULL == previous) {
-        timers_active_list = elem;
+        _tmrs_active_list = elem;
     }
     else {
         previous->next = elem;
@@ -181,7 +184,7 @@ static int timers_array_insert( timer_t *timer )
 
 static int timers_array_remove(timer_t *timer)
 {
-    timer_t *previous = NULL, *head = timers_active_list;
+    timer_t *previous = NULL, *head = _tmrs_active_list;
 
     if (NULL == head)
         return -1;
@@ -195,15 +198,15 @@ static int timers_array_remove(timer_t *timer)
         return -1;
 
     if (NULL == previous) {
-        timers_active_list = head->next;
+        _tmrs_active_list = head->next;
     }
     else {
         previous->next = head->next;
     }
 
     /* put block back into free list */
-    timer->next = timers_free_list;
-    timers_free_list = timer;
+    timer->next = _tmrs_free_list;
+    _tmrs_free_list = timer;
 
     return 0;
 }

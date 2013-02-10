@@ -36,8 +36,8 @@ typedef struct timer_TAG {
 int timers_is_initialized();
 
 /** initializes the library. Must be invoked once, before using the library */
-int timers_init(int max_simultaneous_timeouts
-                = TIMERS_DEFAULT_MAX_SIMULTANEOUS_TIMEOUTS);
+int timers_init(int max_simultaneous_timeouts =
+                TIMERS_DEFAULT_MAX_SIMULTANEOUS_TIMEOUTS);
 
 /** schedules a delayed action. returns timer id if succesful, -1 otherwise */
 timer_id_t timers_schedule(ticks_t dly, timer_handler_t handler,
