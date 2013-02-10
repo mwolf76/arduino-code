@@ -1,34 +1,21 @@
-#include <math.h>
-
+#include <Debug.h>
+#include <Debounce.h>
 #include <Timers.h>
 
-#include <Debounce.h>
-#include <Debug.h>
-
 #include <SerialLCD.h>
-#include <SoftwareSerial.h>
-
-#define N_SAMPLES (24)
-
-#define TEMP_SAMPLE_PERIOD (125)
-#define LCD_UPDATE_PERIOD  (500)
-#define ACT_UPDATE_PERIOD (1000)
-#define CLK_PERIOD        (1000)
 
 /* SLCD and Serial monitor can not be used at once, uncomment
    following line to enable SLCD sub-system. */
-#define USE_SLCD 1
+#define USE_SLCD
+
+/* const data */
+const int N_SAMPLES = 24;
+const int TEMP_SAMPLE_PERIOD = 125;
+const int LCD_UPDATE_PERIOD  = 500;
+const int ACT_UPDATE_PERIOD  = 1000;
+const int CLK_PERIOD         = 1000;
 
 /* -- Helpers --------------------------------------------------------------- */
-#define PRINT_TEMP(temp)                                                \
-    do {                                                                \
-        SLCDprintFloat((temp), 1);                                      \
-    } while (0)
-
-#define PRINT_TIME(h,m)                                                 \
-    do {                                                                \
-    } while (0)
-
 #define GOTO_XY(x,y)                                                    \
     do { slcd.setCursor((x), (y)); } while (0)
 
@@ -49,7 +36,7 @@ const int di_clk_adjust = 8;
 
 const int do_actuate = 4;
 
-#if USE_SLCD
+#ifdef USE_SLCD
 const int slcd_tx = 11;
 const int slcd_rx = 12;
 SerialLCD slcd(slcd_tx, slcd_rx);
@@ -145,7 +132,7 @@ void setup()
 
     debug_init();
 
-#if USE_SLCD
+#ifdef USE_SLCD
     slcd.begin();
 #else
     Serial.begin(9600); /* debug only */
@@ -288,7 +275,7 @@ static int clk_adjust_callback(deb_id_t unused, debouncer_state_t state,
 
 static int display_callback(timer_id_t unused, ticks_t now, void *ctx)
 {
-#if USE_SLCD
+#ifdef USE_SLCD
     display_ctx_t *pctx = (display_ctx_t *) ctx;
 
     if (! pctx->initialized) {
@@ -400,16 +387,16 @@ static int clock_callback(timer_id_t unused, ticks_t now, void *ctx)
 
 static void update_display(display_ctx_t *pctx)
 {
-#if USE_SLCD
+#ifdef USE_SLCD
     GOTO_XY(0, 0);
-    PRINT_TEMP(pctx->curr_temperature);
+    SLCDprintFloat(pctx->curr_temperature, 1);
 
     GOTO_XY(15, 0);
     pctx->heartbeat = ! pctx->heartbeat;
     slcd.print(pctx->heartbeat ? '*' : ' ' );
 
     GOTO_XY(0, 1);
-    PRINT_TEMP(pctx->goal_temperature);
+    SLCDprintFloat(pctx->goal_temperature, 1);
 
     GOTO_XY(11, 1);
     {
@@ -439,9 +426,6 @@ static void update_display(display_ctx_t *pctx)
 
         slcd.print(buf);
     }
-
-
-    PRINT_TIME(pctx->now.tm_hour, pctx->now.tm_min);
 #endif
 }
 
@@ -452,7 +436,7 @@ static inline int control(int status)
 }
 
 /* -- helpers --------------------------------------------------------------- */
-#if USE_SLCD
+#ifdef USE_SLCD
 static void SLCDprintFloat(double number, uint8_t digits)
 {
     // Handle negative numbers
