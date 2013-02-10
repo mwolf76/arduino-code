@@ -106,10 +106,10 @@ deb_ctx_t decrement_ctx;
 /* -- static function prototypes -------------------------------------------- */
 
 /* timed action callbacks  */
-static int display_callback(timer_id_t unused, unsigned long now, void *ctx);
-static int sampling_callback(timer_id_t unused, unsigned long now, void *ctx);
-static int thermal_callback(timer_id_t unused, unsigned long now, void *ctx);
-static int clock_callback(timer_id_t unused, unsigned long now, void *ctx);
+static int display_callback(timer_id_t unused, ticks_t now, void *ctx);
+static int sampling_callback(timer_id_t unused, ticks_t now, void *ctx);
+static int thermal_callback(timer_id_t unused, ticks_t now, void *ctx);
+static int clock_callback(timer_id_t unused, ticks_t now, void *ctx);
 
 /* button callbacks */
 static int thermal_button_callback(deb_id_t unused, debouncer_state_t state,
@@ -286,7 +286,7 @@ static int clk_adjust_callback(deb_id_t unused, debouncer_state_t state,
 }
 
 
-static int display_callback(timer_id_t unused, unsigned long now, void *ctx)
+static int display_callback(timer_id_t unused, ticks_t now, void *ctx)
 {
 #if USE_SLCD
     display_ctx_t *pctx = (display_ctx_t *) ctx;
@@ -327,7 +327,7 @@ static int display_callback(timer_id_t unused, unsigned long now, void *ctx)
     return 1; /* infinite rescheduling */
 }
 
-static int thermal_callback(timer_id_t unused, unsigned long now, void *ctx)
+static int thermal_callback(timer_id_t unused, ticks_t now, void *ctx)
 {
     display_ctx_t *pctx = (display_ctx_t *) ctx;
     if (! pctx->initialized) return 1;
@@ -352,7 +352,7 @@ static int thermal_callback(timer_id_t unused, unsigned long now, void *ctx)
     return 1; /* infinite rescheduling */
 }
 
-static int sampling_callback(timer_id_t unused, unsigned long now, void *ctx)
+static int sampling_callback(timer_id_t unused, ticks_t now, void *ctx)
 {
     display_ctx_t *pctx = (display_ctx_t *) ctx;
 
@@ -376,7 +376,7 @@ static int sampling_callback(timer_id_t unused, unsigned long now, void *ctx)
     return 1; /* infinite rescheduling */
 }
 
-static int clock_callback(timer_id_t unused, unsigned long now, void *ctx)
+static int clock_callback(timer_id_t unused, ticks_t now, void *ctx)
 {
     display_ctx_t *pctx = (display_ctx_t *) ctx;
 
