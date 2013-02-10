@@ -41,6 +41,8 @@ static timer_id_t _tmrs_next_id = 0;
 
 /** -- static function prototypes ------------------------------------------- */
 static inline int timers_cmp( timer_t *a, timer_t *b );
+static inline void timers_set( timer_t *timer, ticks_t base, ticks_t dly);
+
 static int timers_array_insert( timer_t *timer );
 static int timers_array_remove( timer_t *timer );
 
@@ -76,9 +78,7 @@ timer_id_t timers_schedule( ticks_t dly, timer_handler_t handler,
 
     /* populate data structure */
     timer.id =  _tmrs_next_id ++;
-
-    timer.base = millis();
-    timer.dly = dly;
+    timers_set( &timer, millis(), dly);
     timer.handler = handler;
     timer.user_data = user_data;
 
@@ -132,16 +132,29 @@ int timers_cancel(timer_id_t id)
 void timers_check()
 {
     int rc, count = _tmrs_max_timeouts;
-    timer_t *next, *head = _tmrs_active_list;
-
+    timer_t *next, *head;
     ASSERT(timers_is_initialized());
 
+    static ticks_t last = NO_TICKS;
     ticks_t now = millis();
 
+    /* clock overflow detected, clear is_future flags */
+    if (now < last) {
+        head = _tmrs_active_list;
+        while (NULL != head) {
+            ASSERT(0 <= head->is_future);
+            -- head->is_future;
+            head = head->next;
+        }
+    }
+    last = now; /* save current clock ticks */
+
+    head = _tmrs_active_list;
     while (NULL != head) {
 
-        /* TODO: figure out clock condition */
-        if (head->base + head->dly > now)
+        if (1 == head->is_future ||
+            (0 == head->is_future && now < head->base + head->dly))
+            /* -1 == head->is_future means the timer *has* expired */
             break;
 
         next = head->next;
@@ -152,7 +165,7 @@ void timers_check()
         }
         else {
             /* reschedule */
-            head->base = now;
+            timers_set(head, now, head->dly);
         }
 
         if (0 == -- count)
@@ -166,9 +179,18 @@ void timers_check()
 /* -- static functions ------------------------------------------------------ */
 static inline int timers_cmp( timer_t *a, timer_t *b )
 {
+    /* b is in the future, a is not => a comes first */
+    if (b->is_future > a->is_future)
+        return 1;
+
+    /* a is in the future, b is not => b comes first */
+    if (a->is_future > b->is_future)
+        return -1;
+
+    /* here a and b are either both present or both future, hence
+       ticks have the same interpretation */
     ticks_t ta = a->base + a->dly;
     ticks_t tb = b->base + b->dly;
-
     return (ta <= tb) ? 1 : -1;
 }
 
@@ -188,7 +210,7 @@ static int timers_array_insert( timer_t *timer )
 
     /* sorted insertion */
     timer_t *previous = NULL, *eye = _tmrs_active_list;
-    while (NULL != eye && 0 < timers_cmp( eye, elem)) {
+    while (NULL != eye && 0 < timers_cmp(eye, elem)) {
         previous = eye;
         eye = eye->next;
     }
@@ -231,4 +253,13 @@ static int timers_array_remove(timer_t *timer)
     _tmrs_free_list = timer;
 
     return 0;
+}
+
+static inline void timers_set(timer_t *timer, ticks_t base, ticks_t dly)
+{
+    timer->base = base;
+    timer->dly  = dly;
+
+    /* is_future signals arithmetic overflow has occurred, timer is postponed */
+    timer->is_future = (base + dly < base) ? 1 : 0;
 }

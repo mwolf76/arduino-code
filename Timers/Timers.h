@@ -30,6 +30,7 @@ const int TIMERS_DEFAULT_MAX_SIMULTANEOUS_TIMEOUTS = 5;
 
 typedef short timer_id_t;
 typedef unsigned long ticks_t;
+const ticks_t NO_TICKS = 0L;
 typedef int timer_handler_t(timer_id_t id, ticks_t now, void *ctx);
 
 typedef struct timer_TAG {
@@ -42,6 +43,9 @@ typedef struct timer_TAG {
 
     /** current time when timer was started */
     ticks_t base;
+
+    /** flag used to prevent issues with clock overflow */
+    int is_future;
 
     /** Scheduled time action */
     timer_handler_t *handler;
