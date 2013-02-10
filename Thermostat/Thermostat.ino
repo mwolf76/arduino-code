@@ -388,44 +388,42 @@ static int clock_callback(timer_id_t unused, ticks_t now, void *ctx)
 static void update_display(display_ctx_t *pctx)
 {
 #ifdef USE_SLCD
+    char buf[20];
+
     GOTO_XY(0, 0);
     SLCDprintFloat(pctx->curr_temperature, 1);
-
-    GOTO_XY(15, 0);
-    pctx->heartbeat = ! pctx->heartbeat;
-    slcd.print(pctx->heartbeat ? '*' : ' ' );
 
     GOTO_XY(0, 1);
     SLCDprintFloat(pctx->goal_temperature, 1);
 
     GOTO_XY(11, 1);
-    {
-        char buf[10];
-
-        if (CTL_RUNNING == pctx->ctl) {
-            snprintf(buf, 10, "%02d:%02d", pctx->now.tm_hour, pctx->now.tm_min);
-        }
-        else if (CTL_SET_HOUR == pctx->ctl) {
-            if (pctx->heartbeat) {
-                snprintf(buf, 10, "%02d:%02d",
-                         pctx->now.tm_hour, pctx->now.tm_min);
-            }
-            else {
-                snprintf(buf, 10, "  :%02d", pctx->now.tm_min);
-            }
-        }
-        else if (CTL_SET_MINUTE == pctx->ctl) {
-            if (pctx->heartbeat) {
-                snprintf(buf, 10, "%02d:%02d",
-                         pctx->now.tm_hour, pctx->now.tm_min);
-            }
-            else {
-                snprintf(buf, 10, "%02d:  ", pctx->now.tm_hour);
-            }
-        }
-
-        slcd.print(buf);
+    pctx->heartbeat = ! pctx->heartbeat;
+    if (CTL_RUNNING == pctx->ctl) {
+        snprintf(buf, 10, "%02d%c%02d",
+                 pctx->now.tm_hour,
+                 pctx->heartbeat ? ':' : ' ',
+                 pctx->now.tm_min);
     }
+    else if (CTL_SET_HOUR == pctx->ctl) {
+        if (pctx->heartbeat) {
+            snprintf(buf, 10, "%02d:%02d",
+                     pctx->now.tm_hour, pctx->now.tm_min);
+        }
+        else {
+            snprintf(buf, 10, "  :%02d", pctx->now.tm_min);
+        }
+    }
+    else if (CTL_SET_MINUTE == pctx->ctl) {
+        if (pctx->heartbeat) {
+            snprintf(buf, 10, "%02d:%02d",
+                     pctx->now.tm_hour, pctx->now.tm_min);
+        }
+        else {
+            snprintf(buf, 10, "%02d:  ", pctx->now.tm_hour);
+        }
+    }
+
+    slcd.print(buf);
 #endif
 }
 
