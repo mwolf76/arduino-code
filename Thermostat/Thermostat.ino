@@ -481,3 +481,5 @@ static double readTemp()
     res =1 / (log( sensor / 10000 ) / B + 1 / 298.15 ) - 273.15;
     return res;
 }
+
+/* a dummy comment for a demo... */
